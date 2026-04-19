@@ -10,10 +10,11 @@ const swaggerSpec = swaggerJSDoc({
       description: "Documentation de ton API bancaire"
     },
     servers: [
-      {
-        url: "http://localhost:3000"
-      }
-    ]
+  {
+    url: "https://api-banque.onrender.com"
+  }
+]
+    
   },
   apis: ["./routes/*.js"] // il va lire tes routes automatiquement
 });
