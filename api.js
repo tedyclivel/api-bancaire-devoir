@@ -28,7 +28,7 @@ const swaggerSpec = swaggerJsdoc({
       }
     ]
   },
-  apis: ["./server.js"]
+  apis: ["./api.js"]
 });
 
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
@@ -47,7 +47,7 @@ app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
  *         description: API fonctionnelle
  */
 app.get("/", (req, res) => {
-  res.send("API bancaire opérationnelle 🚀");
+  res.send("API bancaire opérationnelle ");
 });
 
 /* =========================
