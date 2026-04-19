@@ -1,49 +1,82 @@
-const express = require('express');
-const swaggerUi = require('swagger-ui-express');
-const swaggerJsdoc = require('swagger-jsdoc');
+const express = require("express");
+const swaggerUi = require("swagger-ui-express");
+const swaggerJsdoc = require("swagger-jsdoc");
 
 const app = express();
 app.use(express.json());
 
 /* =========================
-    DONNÉES SIMULÉES
+   DONNÉES SIMULÉES
 ========================= */
 let comptes = [];
 let idCounter = 1;
 
 /* =========================
-    ROUTE TEST
+   SWAGGER CONFIG
 ========================= */
-app.get('/', (req, res) => {
+const swaggerSpec = swaggerJsdoc({
+  definition: {
+    openapi: "3.0.0",
+    info: {
+      title: "API Bancaire API304",
+      version: "1.0.0",
+      description: "API de gestion des comptes bancaires"
+    },
+    servers: [
+      {
+        url: "http://localhost:3000"
+      }
+    ]
+  },
+  apis: ["./server.js"]
+});
+
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
+/* =========================
+   ROUTE TEST
+========================= */
+/**
+ * @swagger
+ * /:
+ *   get:
+ *     summary: Route de test
+ *     tags: [Test]
+ *     responses:
+ *       200:
+ *         description: API fonctionnelle
+ */
+app.get("/", (req, res) => {
   res.send("API bancaire opérationnelle 🚀");
 });
 
 /* =========================
-    SWAGGER CONFIG
+   CREER COMPTE
 ========================= */
-const specs = swaggerJsdoc({
-  definition: {
-    openapi: "3.0.0",
-    info: {
-      title: "API Bancaire",
-      version: "1.0.0",
-      description: "Gestion des comptes bancaires"
-    },
-    servers: [
-      {
-        url: "https://api-bancaire-devoir-1.onrender.com"
-      }
-    ]
-  },
-  apis: []
-});
-
-app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(specs));
-
-/* =========================
-    CREER COMPTE
-========================= */
-app.post('/comptes', (req, res) => {
+/**
+ * @swagger
+ * /comptes:
+ *   post:
+ *     summary: Créer un compte bancaire
+ *     tags: [Comptes]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               nom:
+ *                 type: string
+ *               email:
+ *                 type: string
+ *               soldeInitial:
+ *                 type: number
+ *     responses:
+ *       201:
+ *         description: Compte créé
+ */
+app.post("/comptes", (req, res) => {
   const { nom, email, soldeInitial } = req.body;
 
   if (!nom || !email) {
@@ -54,7 +87,7 @@ app.post('/comptes', (req, res) => {
     id: idCounter++,
     nom,
     email,
-    solde: soldeInitial || 0,
+    solde: Number(soldeInitial) || 0,
     date_creation: new Date()
   };
 
@@ -64,20 +97,61 @@ app.post('/comptes', (req, res) => {
 });
 
 /* =========================
-    LISTE COMPTES
+   LISTE COMPTES
 ========================= */
-app.get('/comptes', (req, res) => {
+/**
+ * @swagger
+ * /comptes:
+ *   get:
+ *     summary: Liste des comptes
+ *     tags: [Comptes]
+ *     responses:
+ *       200:
+ *         description: Liste récupérée
+ */
+app.get("/comptes", (req, res) => {
   res.json(comptes);
 });
 
 /* =========================
-    DEPOT
+   DEPOT
 ========================= */
-app.post('/comptes/:id/depot', (req, res) => {
+/**
+ * @swagger
+ * /comptes/{id}/depot:
+ *   post:
+ *     summary: Dépôt d'argent
+ *     tags: [Transactions]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               montant:
+ *                 type: number
+ *     responses:
+ *       200:
+ *         description: Dépôt effectué
+ */
+app.post("/comptes/:id/depot", (req, res) => {
   const compte = comptes.find(c => c.id == req.params.id);
-  const { montant } = req.body;
+  const montant = Number(req.body.montant);
 
-  if (!compte) return res.status(404).json({ message: "Compte introuvable" });
+  if (!compte) {
+    return res.status(404).json({ message: "Compte introuvable" });
+  }
+
+  if (!montant || montant <= 0) {
+    return res.status(400).json({ message: "Montant invalide" });
+  }
 
   compte.solde += montant;
 
@@ -85,13 +159,44 @@ app.post('/comptes/:id/depot', (req, res) => {
 });
 
 /* =========================
-    RETRAIT
+   RETRAIT
 ========================= */
-app.post('/comptes/:id/retrait', (req, res) => {
+/**
+ * @swagger
+ * /comptes/{id}/retrait:
+ *   post:
+ *     summary: Retrait d'argent
+ *     tags: [Transactions]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               montant:
+ *                 type: number
+ *     responses:
+ *       200:
+ *         description: Retrait effectué
+ */
+app.post("/comptes/:id/retrait", (req, res) => {
   const compte = comptes.find(c => c.id == req.params.id);
-  const { montant } = req.body;
+  const montant = Number(req.body.montant);
 
-  if (!compte) return res.status(404).json({ message: "Compte introuvable" });
+  if (!compte) {
+    return res.status(404).json({ message: "Compte introuvable" });
+  }
+
+  if (!montant || montant <= 0) {
+    return res.status(400).json({ message: "Montant invalide" });
+  }
 
   if (compte.solde < montant) {
     return res.status(400).json({ message: "Solde insuffisant" });
@@ -103,7 +208,7 @@ app.post('/comptes/:id/retrait', (req, res) => {
 });
 
 /* =========================
-    SERVEUR
+   SERVEUR
 ========================= */
 const PORT = process.env.PORT || 3000;
 
