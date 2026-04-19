@@ -1,58 +1,48 @@
 const express = require('express');
-const app = express();
-
 const swaggerUi = require('swagger-ui-express');
 const swaggerJsdoc = require('swagger-jsdoc');
 
+const app = express();
 app.use(express.json());
 
 /* =========================
-   🔥 SWAGGER CONFIG
-========================= */
-const options = {
-  definition: {
-    openapi: "3.0.0",
-    info: {
-      title: "API Bancaire",
-      version: "1.0.0",
-      description: "API de gestion bancaire (comptes, dépôts, retraits)"
-    },
-    servers: [
-      {
-        url: "http://localhost:3000"
-      }
-    ]
-  },
-  apis: ["./api.js"]
-};
-
-const specs = swaggerJsdoc(options);
-
-app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(specs));
-
-/* =========================
-   💾 BASE DE DONNÉES SIMULÉE
+    DONNÉES SIMULÉES
 ========================= */
 let comptes = [];
 let idCounter = 1;
 
 /* =========================
-   🌐 ROUTE TEST
+    ROUTE TEST
 ========================= */
 app.get('/', (req, res) => {
   res.send("API bancaire opérationnelle 🚀");
 });
 
 /* =========================
-   🧾 CREATION COMPTE
+    SWAGGER CONFIG
 ========================= */
-/**
- * @swagger
- * /comptes:
- *   post:
- *     summary: Créer un compte bancaire
- *     tags: [Comptes]
- */
+const specs = swaggerJsdoc({
+  definition: {
+    openapi: "3.0.0",
+    info: {
+      title: "API Bancaire",
+      version: "1.0.0",
+      description: "Gestion des comptes bancaires"
+    },
+    servers: [
+      {
+        url: "https://api-bancaire-devoir-1.onrender.com"
+      }
+    ]
+  },
+  apis: []
+});
+
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(specs));
+
+/* =========================
+    CREER COMPTE
+========================= */
 app.post('/comptes', (req, res) => {
   const { nom, email, soldeInitial } = req.body;
 
@@ -60,12 +50,7 @@ app.post('/comptes', (req, res) => {
     return res.status(400).json({ message: "Nom et email requis" });
   }
 
-  const exist = comptes.find(c => c.email === email);
-  if (exist) {
-    return res.status(400).json({ message: "Email déjà utilisé" });
-  }
-
-  const nouveauCompte = {
+  const compte = {
     id: idCounter++,
     nom,
     email,
@@ -73,52 +58,40 @@ app.post('/comptes', (req, res) => {
     date_creation: new Date()
   };
 
-  comptes.push(nouveauCompte);
+  comptes.push(compte);
 
-  res.status(201).json(nouveauCompte);
+  res.status(201).json(compte);
 });
 
 /* =========================
-   📋 LISTE COMPTES
+    LISTE COMPTES
 ========================= */
 app.get('/comptes', (req, res) => {
   res.json(comptes);
 });
 
 /* =========================
-   💰 DEPOT
+    DEPOT
 ========================= */
 app.post('/comptes/:id/depot', (req, res) => {
   const compte = comptes.find(c => c.id == req.params.id);
   const { montant } = req.body;
 
-  if (!compte) {
-    return res.status(404).json({ message: "Compte non trouvé" });
-  }
-
-  if (!montant || typeof montant !== "number" || montant <= 0) {
-    return res.status(400).json({ message: "Montant invalide" });
-  }
+  if (!compte) return res.status(404).json({ message: "Compte introuvable" });
 
   compte.solde += montant;
 
-  res.json({ message: "Dépôt réussi", compte });
+  res.json(compte);
 });
 
 /* =========================
-   💸 RETRAIT
+    RETRAIT
 ========================= */
 app.post('/comptes/:id/retrait', (req, res) => {
   const compte = comptes.find(c => c.id == req.params.id);
   const { montant } = req.body;
 
-  if (!compte) {
-    return res.status(404).json({ message: "Compte non trouvé" });
-  }
-
-  if (!montant || typeof montant !== "number" || montant <= 0) {
-    return res.status(400).json({ message: "Montant invalide" });
-  }
+  if (!compte) return res.status(404).json({ message: "Compte introuvable" });
 
   if (compte.solde < montant) {
     return res.status(400).json({ message: "Solde insuffisant" });
@@ -126,14 +99,14 @@ app.post('/comptes/:id/retrait', (req, res) => {
 
   compte.solde -= montant;
 
-  res.json({ message: "Retrait réussi", compte });
+  res.json(compte);
 });
 
 /* =========================
-   🚀 SERVER
+    SERVEUR
 ========================= */
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
-  console.log(`Serveur lancé sur le port ${PORT}`);
+  console.log(`Serveur lancé sur ${PORT}`);
 });
