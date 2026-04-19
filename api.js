@@ -25,11 +25,11 @@ const swaggerSpec = swaggerJsdoc({
       version: "1.0.0",
       description: "API de gestion des comptes bancaires"
     },
-    servers: [
-      {
-        url: "http://localhost:3000"
-      }
-    ]
+      servers: [
+  {
+    url: "https://api-banque.onrender.com"
+  }
+]
   },
   apis: ["./api.js"]
 });
